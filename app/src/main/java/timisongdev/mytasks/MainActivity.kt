@@ -65,6 +65,7 @@ import timisongdev.mytasks.ui.theme.MyTasksTheme
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -119,6 +120,10 @@ fun Greeting() {
     var name by remember { mutableStateOf("") }
     var checkPass by remember { mutableStateOf("") }
 
+    var inn by remember { mutableStateOf("") }
+    var card by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
+    var adphone by remember { mutableStateOf("") }
     var pageLevel by remember { mutableIntStateOf(1) }
 
     val material = MaterialTheme.colorScheme
@@ -127,11 +132,9 @@ fun Greeting() {
     var secondBox by remember { mutableStateOf(material.primaryContainer) }
 
     var pickHeight by remember { mutableStateOf(0.dp) }
-
     val sheetState = rememberBottomSheetScaffoldState(bottomSheetState = rememberStandardBottomSheetState(skipHiddenState = false))
 
     val infiniteTransition = rememberInfiniteTransition(label = "")
-
     val color1 by infiniteTransition.animateColor(
         initialValue = Color.Red,
         targetValue = Color.Blue,
@@ -154,8 +157,11 @@ fun Greeting() {
 
     var passwordVisibility: Boolean by remember { mutableStateOf(false) }
     var checkPassVisibility: Boolean by remember { mutableStateOf(false) }
-
     var pageVis by remember { mutableStateOf(true) }
+
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp.dp
+    val screenWidth = configuration.screenWidthDp.dp
 
     Column (
         Modifier
@@ -202,6 +208,7 @@ fun Greeting() {
             )
             Button(onClick = {
                 scope.launch {
+                    pageLevel = 1
                     sheetState.bottomSheetState.expand()
                 }
                 pageLevel = 1
@@ -221,7 +228,7 @@ fun Greeting() {
         sheetContent = {
             Column (
                 Modifier
-                    .heightIn(min = 100.dp, max = 750.dp)
+                    .heightIn(min = 100.dp, max = screenHeight - 100.dp)
                     .padding(8.dp)
                     .fillMaxSize(),
                 verticalArrangement = Arrangement.Center,
@@ -251,22 +258,36 @@ fun Greeting() {
                 )
                 AnimatedVisibility(
                     visible = pageVis,
-                    enter = fadeIn(animationSpec = tween(1000)),
-                    exit = fadeOut(animationSpec = tween(1000))
+                    enter = fadeIn(animationSpec = tween(500)),
+                    exit = fadeOut(animationSpec = tween(500))
                 ) {
                     Column {
                         if (pageLevel < 3) {
                             TextField(
-                                value = email,
-                                onValueChange = { newText -> email = newText },
-                                label = {
+                                value = if (pageLevel == 1) email else inn,
+                                onValueChange =
+                                {
+                                    newText -> if (pageLevel == 1) {
+                                        email = newText
+                                    } else {
+                                        inn = newText
+                                    }
+                                },
+                                label =
+                                {
                                     Text(
                                         text = pageLevels(pageLevel).getOrNull(0) ?: ""
                                     )
                                 },
                                 singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                                leadingIcon = if (pageLevel == 1) {
+                                keyboardOptions =
+                                if (pageLevel == 1) {
+                                    KeyboardOptions(keyboardType = KeyboardType.Email)
+                                } else {
+                                    KeyboardOptions(keyboardType = KeyboardType.Number)
+                                },
+                                leadingIcon =
+                                if (pageLevel == 1) {
                                     {
                                         Icon(Icons.Outlined.Email, contentDescription = "Email")
                                     }
@@ -278,15 +299,28 @@ fun Greeting() {
                             )
                             if (mode == "Register") {
                                 TextField(
-                                    value = name,
-                                    onValueChange = { newText -> name = newText },
-                                    label = {
+                                    value = if (pageLevel == 1) name else card,
+                                    onValueChange =
+                                    {
+                                        newText -> if (pageLevel == 1) {
+                                            name = newText
+                                        } else {
+                                            card = newText
+                                        }
+                                    },
+                                    label =
+                                    {
                                         Text(
                                             text = pageLevels(pageLevel).getOrNull(1) ?: ""
                                         )
                                     },
                                     singleLine = true,
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                                    keyboardOptions =
+                                    if (pageLevel == 1) {
+                                        KeyboardOptions(keyboardType = KeyboardType.Text)
+                                    } else {
+                                        KeyboardOptions(keyboardType = KeyboardType.Number)
+                                    },
                                     leadingIcon = if (pageLevel == 1) {
                                         {
                                             Icon(
@@ -305,16 +339,29 @@ fun Greeting() {
                                 )
                             }
                             TextField(
-                                value = password,
-                                onValueChange = { newText -> password = newText },
-                                label = {
+                                value = if (pageLevel == 1) password else phone,
+                                onValueChange =
+                                {
+                                    newText -> if (pageLevel == 1) {
+                                        password = newText
+                                    } else {
+                                        phone = newText
+                                    }
+                                },
+                                label =
+                                {
                                     Text(
                                         text = pageLevels(pageLevel).getOrNull(2) ?: ""
                                     )
                                 },
                                 singleLine = true,
-                                visualTransformation = if (passwordVisibility) VisualTransformation.None else PasswordVisualTransformation(),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                                visualTransformation = if (passwordVisibility || pageLevel > 1) VisualTransformation.None else PasswordVisualTransformation(),
+                                keyboardOptions =
+                                if (pageLevel == 1) {
+                                    KeyboardOptions(keyboardType = KeyboardType.Password)
+                                } else {
+                                    KeyboardOptions(keyboardType = KeyboardType.Phone)
+                                },
                                 leadingIcon = if (pageLevel == 1) {
                                     {
                                         Icon(Icons.Outlined.Lock, contentDescription = "Password")
@@ -344,16 +391,29 @@ fun Greeting() {
                             )
                             if (mode == "Register") {
                                 TextField(
-                                    value = checkPass,
-                                    onValueChange = { newText -> checkPass = newText },
-                                    label = {
+                                    value = if (pageLevel == 1) checkPass else adphone,
+                                    onValueChange =
+                                    {
+                                        newText -> if (pageLevel == 1) {
+                                            checkPass = newText
+                                        } else {
+                                            adphone = newText
+                                        }
+                                    },
+                                    label =
+                                    {
                                         Text(
                                             text = pageLevels(pageLevel).getOrNull(3) ?: ""
                                         )
                                     },
                                     singleLine = true,
-                                    visualTransformation = if (passwordVisibility) VisualTransformation.None else PasswordVisualTransformation(),
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                                    visualTransformation = if (checkPassVisibility || pageLevel > 1) VisualTransformation.None else PasswordVisualTransformation(),
+                                    keyboardOptions =
+                                    if (pageLevel == 1) {
+                                        KeyboardOptions(keyboardType = KeyboardType.Password)
+                                    } else {
+                                        KeyboardOptions(keyboardType = KeyboardType.Phone)
+                                    },
                                     leadingIcon = if (pageLevel == 1) {
                                         {
                                             Icon(
@@ -454,7 +514,7 @@ fun Greeting() {
                         if (mode == "Register") {
                             pageVis = !pageVis
                             scope.launch {
-                                kotlinx.coroutines.delay(1000)
+                                kotlinx.coroutines.delay(500)
                                 if (pageLevel != 3)
                                     pageLevel += 1
                                 pageVis = true
@@ -474,7 +534,7 @@ fun Greeting() {
                         onClick = {
                             pageVis = !pageVis
                             scope.launch {
-                                kotlinx.coroutines.delay(1000)
+                                kotlinx.coroutines.delay(500)
                                 if (pageLevel != 1)
                                     pageLevel -= 1
                                 pageVis = true
