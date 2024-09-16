@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColor
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.infiniteRepeatable
@@ -16,6 +17,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,8 +25,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -65,6 +69,7 @@ import timisongdev.mytasks.ui.theme.MyTasksTheme
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
@@ -128,13 +133,22 @@ fun Greeting() {
 
     val material = MaterialTheme.colorScheme
 
-    var firstBox by remember { mutableStateOf(material.primaryContainer) }
-    var secondBox by remember { mutableStateOf(material.primaryContainer) }
+    var isClickedF by remember { mutableStateOf(false) }
+
+    var isClickedS by remember { mutableStateOf(false) }
+
+    val firstBox by animateColorAsState(
+        targetValue = if (isClickedF) material.primary else material.primaryContainer, label = ""
+    )
+    val secondBox by animateColorAsState(
+        targetValue = if (isClickedS) material.primary else material.primaryContainer, label = ""
+    )
 
     var pickHeight by remember { mutableStateOf(0.dp) }
     val sheetState = rememberBottomSheetScaffoldState(bottomSheetState = rememberStandardBottomSheetState(skipHiddenState = false))
 
     val infiniteTransition = rememberInfiniteTransition(label = "")
+
     val color1 by infiniteTransition.animateColor(
         initialValue = Color.Red,
         targetValue = Color.Blue,
@@ -289,11 +303,17 @@ fun Greeting() {
                                 leadingIcon =
                                 if (pageLevel == 1) {
                                     {
-                                        Icon(Icons.Outlined.Email, contentDescription = "Email")
+                                        Icon (
+                                            Icons.Outlined.Email,
+                                            contentDescription = "Email"
+                                        )
                                     }
                                 } else {
                                     {
-                                        Icon(Icons.Outlined.Edit, contentDescription = "INN")
+                                        Icon (
+                                            painter = painterResource(id = R.drawable.ic_inn),
+                                            contentDescription = "INN"
+                                        )
                                     }
                                 }
                             )
@@ -324,14 +344,14 @@ fun Greeting() {
                                     leadingIcon = if (pageLevel == 1) {
                                         {
                                             Icon(
-                                                Icons.Outlined.AccountCircle,
-                                                contentDescription = "Email"
+                                                painter = painterResource(id = R.drawable.ic_name),
+                                                contentDescription = "Name"
                                             )
                                         }
                                     } else {
                                         {
                                             Icon(
-                                                Icons.Outlined.ShoppingCart,
+                                                painter = painterResource(id = R.drawable.ic_credit_card),
                                                 contentDescription = "Card"
                                             )
                                         }
@@ -417,7 +437,7 @@ fun Greeting() {
                                     leadingIcon = if (pageLevel == 1) {
                                         {
                                             Icon(
-                                                Icons.Outlined.Lock,
+                                                painter = painterResource(id = R.drawable.ic_enhanced_encryption),
                                                 contentDescription = "Password"
                                             )
                                         }
@@ -459,50 +479,62 @@ fun Greeting() {
                                     Modifier
                                         .padding(8.dp)
                                         .width(200.dp)
+                                        .height(200.dp)
+                                        .weight(1F)
                                         .clip(RoundedCornerShape(24.dp))
                                         .background(firstBox)
                                         .clickable {
-                                            firstBox = material.primary
-                                            secondBox = material.primaryContainer
+                                            isClickedF = true
+                                            isClickedS = false
                                         }
                                         .wrapContentSize(),
                                     verticalArrangement = Arrangement.Center,
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
                                     Icon (
-                                        Icons.Outlined.Build, contentDescription = "",
+                                        painter = painterResource(R.drawable.ic_footprint), contentDescription = "",
                                         Modifier
-                                            .padding(8.dp)
+                                            .size(82.dp)
+                                            .padding(8.dp),
+                                        tint = if (isClickedF) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface
                                     )
                                     Text (
                                         text = "Walter",
                                         Modifier
-                                            .padding(8.dp)
+                                            .padding(8.dp),
+                                        color = if (isClickedF) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface,
+                                        fontSize = 18.sp
                                     )
                                 }
                                 Column (
                                     Modifier
                                         .padding(8.dp)
                                         .width(200.dp)
+                                        .height(200.dp)
+                                        .weight(1F)
                                         .clip(RoundedCornerShape(24.dp))
                                         .background(secondBox)
                                         .clickable {
-                                            secondBox = material.primary
-                                            firstBox = material.primaryContainer
+                                            isClickedS = true
+                                            isClickedF = false
                                         }
                                         .wrapContentSize(),
                                     verticalArrangement = Arrangement.Center,
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
                                     Icon (
-                                        Icons.Outlined.Warning, contentDescription = "",
+                                        painter = painterResource(R.drawable.ic_pedal_bike), contentDescription = "",
                                         Modifier
-                                            .padding(8.dp)
+                                            .size(82.dp)
+                                            .padding(8.dp),
+                                        tint = if (isClickedS) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface
                                     )
                                     Text (
                                         text = "Jesse",
                                         Modifier
-                                            .padding(8.dp)
+                                            .padding(8.dp),
+                                        color = if (isClickedS) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface,
+                                        fontSize = 18.sp
                                     )
                                 }
                             }
