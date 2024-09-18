@@ -1,6 +1,7 @@
 package timisongdev.mytasks
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Bundle
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
@@ -69,8 +70,8 @@ import timisongdev.mytasks.ui.theme.MyTasksTheme
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -79,6 +80,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -111,7 +113,10 @@ fun pageLevels(level: Int): List<String> {
             "Additional phone"
         )
         else -> listOf (
-
+            "Error of level page",
+            "Send me screen with",
+            "This page",
+            "Thanks."
         )
     }
 }
@@ -176,6 +181,8 @@ fun Greeting() {
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
     val screenWidth = configuration.screenWidthDp.dp
+
+    val context = LocalContext.current
 
     Column (
         Modifier
@@ -278,6 +285,8 @@ fun Greeting() {
                     Column {
                         if (pageLevel < 3) {
                             TextField(
+                                modifier = Modifier
+                                    .width(300.dp),
                                 value = if (pageLevel == 1) email else inn,
                                 onValueChange =
                                 {
@@ -319,6 +328,8 @@ fun Greeting() {
                             )
                             if (mode == "Register") {
                                 TextField(
+                                    modifier = Modifier
+                                        .width(300.dp),
                                     value = if (pageLevel == 1) name else card,
                                     onValueChange =
                                     {
@@ -359,6 +370,8 @@ fun Greeting() {
                                 )
                             }
                             TextField(
+                                modifier = Modifier
+                                    .width(300.dp),
                                 value = if (pageLevel == 1) password else phone,
                                 onValueChange =
                                 {
@@ -411,6 +424,8 @@ fun Greeting() {
                             )
                             if (mode == "Register") {
                                 TextField(
+                                    modifier = Modifier
+                                        .width(300.dp),
                                     value = if (pageLevel == 1) checkPass else adphone,
                                     onValueChange =
                                     {
@@ -544,13 +559,18 @@ fun Greeting() {
                 Button(
                     onClick = {
                         if (mode == "Register") {
-                            pageVis = !pageVis
                             scope.launch {
-                                kotlinx.coroutines.delay(500)
-                                if (pageLevel != 3)
+                                if (pageLevel != 3) {
+                                    pageVis = !pageVis
+                                    delay(500)
                                     pageLevel += 1
+                                } else
+                                    context.startActivity(Intent(context, Workspace::class.java))
                                 pageVis = true
                             }
+                        } else {
+                            // Login check
+                            context.startActivity(Intent(context, Workspace::class.java))
                         }
                     },
                     Modifier
