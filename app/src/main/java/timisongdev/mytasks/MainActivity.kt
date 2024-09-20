@@ -1,6 +1,7 @@
 package timisongdev.mytasks
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import androidx.compose.runtime.setValue
@@ -80,6 +81,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
+import com.yandex.mapkit.mapview.MapView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -183,6 +185,8 @@ fun Greeting() {
     val screenWidth = configuration.screenWidthDp.dp
 
     val context = LocalContext.current
+
+    val activity = (LocalContext.current as? Activity)
 
     Column (
         Modifier
@@ -566,11 +570,13 @@ fun Greeting() {
                                     pageLevel += 1
                                 } else
                                     context.startActivity(Intent(context, Workspace::class.java))
+                                    activity?.finish()
                                 pageVis = true
                             }
                         } else {
                             // Login check
                             context.startActivity(Intent(context, Workspace::class.java))
+                            activity?.finish()
                         }
                     },
                     Modifier
