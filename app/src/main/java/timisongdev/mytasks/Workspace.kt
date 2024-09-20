@@ -10,6 +10,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -39,9 +40,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -50,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.ViewModel
+import coil.compose.rememberImagePainter
 import com.yandex.mapkit.MapKit
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.geometry.Point
@@ -60,6 +64,7 @@ import com.yandex.mapkit.map.CameraPosition
 import com.yandex.mapkit.mapview.MapView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import timisongdev.mytasks.ui.theme.MyTasksTheme
 
@@ -98,7 +103,7 @@ fun Work() {
 
     val title = listOf(
         "Payments",
-        "Near me",
+        "Donate",
         "Stars",
         "Steps",
         "Map",
@@ -108,7 +113,7 @@ fun Work() {
     )
 
     val cells = remember{ mutableIntStateOf(2) }
-    val animatedCells by animateIntAsState(targetValue = cells.intValue, label = "")
+    val openCell = remember { mutableIntStateOf(-1) }
 
     Column (
         Modifier.fillMaxSize(),
@@ -116,18 +121,19 @@ fun Work() {
         horizontalAlignment = Alignment.CenterHorizontally
     ){
         LazyVerticalGrid(
-            columns = GridCells.Fixed(animatedCells),
+            columns = GridCells.Fixed(cells.intValue),
             modifier = Modifier
                 .fillMaxHeight(),
             contentPadding = PaddingValues(8.dp),
             verticalArrangement = Arrangement.Center,
             horizontalArrangement = Arrangement.Center
         ) {
-            items(8) { index ->
+            items(title.size) { index ->
                 GridItem(
                     title = "${title[index]}, $index",
                     index = index,
-                    cells = cells
+                    cells = cells,
+                    openCell = openCell
                 )
             }
         }
@@ -136,19 +142,21 @@ fun Work() {
 
 @SuppressLint("CoroutineCreationDuringComposition")
 @Composable
-fun GridItem(title: String, index: Int, cells: MutableIntState) {
+fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: MutableIntState) {
 
     val expanded = remember { mutableStateOf(false) }
+    val showMap = remember { mutableStateOf(false) }
+
+    val scope = rememberCoroutineScope()
 
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
     val screenWidth = configuration.screenWidthDp.dp
 
-    val openCell = remember { mutableIntStateOf(-1) }
-
-    val steps = 0
-    val starts = 3
-    val pay = "1000"
+    var steps = 0
+    var starts = 3
+    val donate = 500
+    val pay = 1000
     val currency = "$"
 
     val exHeight by animateDpAsState(
@@ -161,95 +169,122 @@ fun GridItem(title: String, index: Int, cells: MutableIntState) {
         animationSpec = tween(300), label = ""
     )
 
-    Column(
-        Modifier
-            .padding(8.dp)
-            .height(exHeight)
-            .width(exWidth)
-            .fillMaxSize()
-            .clip(RoundedCornerShape(24.dp))
-            .clickable {
-                expanded.value = !expanded.value
-                if (expanded.value) {
-                    cells.intValue = 1
-                    openCell.intValue = -1
-                } else {
-                    cells.intValue = 2
-                    openCell.intValue = index
-                }
-            }
-            .animateContentSize()
-            .background(MaterialTheme.colorScheme.primaryContainer),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = title,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier
+    if (openCell.intValue == -1 || openCell.intValue == index) {
+        Column(
+            Modifier
                 .padding(8.dp)
-        )
-        if (index != 4 && index != 6) {
-            Row(
-                Modifier,
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    painter =
-                    when (index) {
-                        0 -> painterResource(R.drawable.ic_payments)
-                        1 -> painterResource(R.drawable.ic_fastfood_near)
-                        2 -> painterResource(R.drawable.ic_star_half)
-                        3 -> painterResource(R.drawable.ic_steps)
-                        5 -> painterResource(R.drawable.ic_last_order)
-                        7 -> painterResource(R.drawable.ic_slots)
-                        else -> painterResource(R.drawable.ic_visibility_off)
-                    },
-                    contentDescription = "",
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier
-                        .size(64.dp)
-                )
-                if (index == 0 || index == 2 || index == 3) {
-                    Text(
-                        text = when (index) {
-                            0 -> pay
-                            2 -> starts.toString()
-                            3 -> steps.toString()
-                            else -> "Error lol"
+                .height(exHeight)
+                .width(exWidth)
+                .fillMaxSize()
+                .clip(RoundedCornerShape(24.dp))
+                .clickable {
+                    expanded.value = !expanded.value
+                    if (expanded.value) {
+                        cells.intValue = 1
+                        openCell.intValue = index
+                        if (index == 4) {
+                            scope.launch {
+                                delay(300)
+                                showMap.value = true
+                            }
+                        } else {
+                            showMap.value = false
+                        }
+                    } else {
+                        cells.intValue = 2
+                        openCell.intValue = -1
+                        showMap.value = false
+                    }
+                }
+                .animateContentSize()
+                .background(MaterialTheme.colorScheme.primaryContainer),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = title,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .padding(8.dp)
+            )
+            if (index != 4 && index != 6) {
+                Row(
+                    Modifier,
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        painter =
+                        when (index) {
+                            0 -> painterResource(R.drawable.ic_payments)
+                            1 -> painterResource(R.drawable.ic_fastfood_near)
+                            2 -> painterResource(R.drawable.ic_star_half)
+                            3 -> painterResource(R.drawable.ic_steps)
+                            5 -> painterResource(R.drawable.ic_last_order)
+                            7 -> painterResource(R.drawable.ic_slots)
+                            else -> painterResource(R.drawable.ic_visibility_off)
                         },
-                        Modifier
-                            .padding(5.dp),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 24.sp,
-                        color = MaterialTheme.colorScheme.onSurface
+                        contentDescription = "",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .size(64.dp)
                     )
-                    if (index == 0) {
+                    if (index == 0 || index == 1 || index == 2 || index == 3) {
                         Text(
-                            text = currency,
-                            fontSize = 24.sp,
+                            text = when (index) {
+                                0 -> pay.toString()
+                                1 -> donate.toString()
+                                2 -> starts.toString()
+                                3 -> steps.toString()
+                                else -> "Error lol"
+                            },
+                            Modifier
+                                .padding(5.dp),
                             fontWeight = FontWeight.Bold,
+                            fontSize = 24.sp,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                    }
-                }
-            }
-        } else {
-            if (index == 4) {
-                AndroidView(
-                    factory = { context ->
-                        MapView(context).apply {
-                            map.isRotateGesturesEnabled = true
-                            showUserLocation()
+                        if (index == 0 || index == 1) {
+                            Text(
+                                text = currency,
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                         }
                     }
-                )
+                }
             } else {
-                Text(
-                    text = "Hello World"
-                )
+                if (index == 4) {
+                    if (showMap.value){
+                        AndroidView(
+                            factory = { context ->
+                                MapView(context).apply {
+                                    map.isRotateGesturesEnabled = true
+                                    showUserLocation()
+                                }
+                            },
+                            Modifier
+                                .padding(8.dp)
+                                .clip(RoundedCornerShape(24.dp))
+                        )
+                    } else {
+                        val mapUrl = "https://static-maps.yandex.ru/1.x/?ll=37.620070,55.753630&size=450,450&z=10&l=map"
+                        Image(
+                            painter = rememberImagePainter(data = mapUrl),
+                            contentDescription = "",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .padding(8.dp)
+                                .clip(RoundedCornerShape(24.dp))
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "Hello World"
+                    )
+                }
             }
         }
     }
