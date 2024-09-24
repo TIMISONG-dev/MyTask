@@ -3,12 +3,16 @@ package timisongdev.mytasks
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.animateColorAsState
@@ -81,6 +85,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
+import androidx.core.content.ContextCompat
 import com.yandex.mapkit.mapview.MapView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -182,7 +187,6 @@ fun Greeting() {
 
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
-    val screenWidth = configuration.screenWidthDp.dp
 
     val context = LocalContext.current
 
@@ -568,10 +572,11 @@ fun Greeting() {
                                     pageVis = !pageVis
                                     delay(500)
                                     pageLevel += 1
-                                } else
+                                    pageVis = true
+                                } else {
                                     context.startActivity(Intent(context, Workspace::class.java))
                                     activity?.finish()
-                                pageVis = true
+                                }
                             }
                         } else {
                             // Login check
@@ -592,7 +597,7 @@ fun Greeting() {
                         onClick = {
                             pageVis = !pageVis
                             scope.launch {
-                                kotlinx.coroutines.delay(500)
+                                delay(500)
                                 if (pageLevel != 1)
                                     pageLevel -= 1
                                 pageVis = true

@@ -26,11 +26,6 @@
             android:name=".Workspace"
             android:exported="true"
             android:theme="@style/Theme.MyTasks">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
     </application>
 
