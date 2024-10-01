@@ -52,12 +52,19 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.yandex.mapkit.MapKitFactory
+import com.yandex.mapkit.RequestPoint
+import com.yandex.mapkit.RequestPointType
+import com.yandex.mapkit.directions.driving.DrivingRoute
+import com.yandex.mapkit.directions.driving.DrivingRouterType
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.location.LocationListener
 import com.yandex.mapkit.location.LocationManager
 import com.yandex.mapkit.location.LocationStatus
 import com.yandex.mapkit.map.CameraPosition
 import com.yandex.mapkit.mapview.MapView
+import com.yandex.mapkit.navigation.automotive.NavigationFactory
+import com.yandex.mapkit.navigation.automotive.NavigationListener
+import com.yandex.runtime.Error
 import timisongdev.mytasks.ui.theme.MyTasksTheme
 
 class Workspace : ComponentActivity() {
@@ -118,6 +125,54 @@ fun Work() {
             locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         }
     }
+
+    val navigation = NavigationFactory.createNavigation(DrivingRouterType.COMBINED)
+
+    // Coordinates routes are requested for
+    val requestPoints = listOf(
+        RequestPoint(Point(25.190614, 55.265616), RequestPointType.WAYPOINT, null, null),
+        RequestPoint(Point(25.187532, 55.275413), RequestPointType.WAYPOINT, null, null),
+        RequestPoint(Point(25.189279, 55.282246), RequestPointType.VIAPOINT, null, null),
+        RequestPoint(Point(25.196605, 55.280940), RequestPointType.WAYPOINT, null, null),
+    )
+    navigation.requestRoutes(
+        requestPoints,
+        navigation.guidance.location?.heading,
+        3,
+    )
+    val navigationListener = object : NavigationListener {
+        override fun onRoutesRequested(p0: MutableList<RequestPoint>) {
+            TODO("Not yet implemented")
+        }
+
+        override fun onAlternativesRequested(p0: DrivingRoute) {
+            TODO("Not yet implemented")
+        }
+
+        override fun onUriResolvingRequested(p0: String) {
+            TODO("Not yet implemented")
+        }
+
+        override fun onRoutesBuilt() {
+            val routes = navigation.routes
+            val fastestRoute = routes[0]
+            // Routes received successfully ...
+        }
+
+        override fun onRoutesRequestError(p0: Error) {
+            // An error occurred when requesting routes ...
+        }
+
+        override fun onResetRoutes() {
+            TODO("Not yet implemented")
+        }
+
+        // Override other listener's methods
+    }
+
+    navigation.addListener(navigationListener)
+
+
 
     val title = listOf(
         "Payments",
@@ -346,7 +401,9 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                             factory = { context ->
                                 MapView(context).apply {
                                     map.isRotateGesturesEnabled = true
-                                    showUserLocation(index)
+                                    map.isTiltGesturesEnabled = true
+                                    map.isScrollGesturesEnabled = true
+                                    showUserLocation()
                                 }
                             },
                             Modifier
@@ -368,8 +425,8 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
     }
 }
 
-fun MapView.showUserLocation(index: Int) {
-    if (Workspace.isInit.value && index == 4) {
+fun MapView.showUserLocation() {
+    if (Workspace.isInit.value) {
         val locationManager: LocationManager = MapKitFactory.getInstance().createLocationManager()
 
         locationManager.requestSingleUpdate(object : LocationListener {

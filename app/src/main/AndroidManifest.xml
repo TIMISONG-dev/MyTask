@@ -29,7 +29,6 @@
         <activity
             android:name=".Workspace"
             android:exported="true"
-            android:screenOrientation="portrait"
             android:theme="@style/Theme.AppCompat">
         </activity>
     </application>
