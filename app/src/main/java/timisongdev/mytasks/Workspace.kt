@@ -1,10 +1,14 @@
 package timisongdev.mytasks
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -35,15 +39,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.location.LocationListener
@@ -51,17 +58,22 @@ import com.yandex.mapkit.location.LocationManager
 import com.yandex.mapkit.location.LocationStatus
 import com.yandex.mapkit.map.CameraPosition
 import com.yandex.mapkit.mapview.MapView
-import kotlinx.coroutines.delay
 import timisongdev.mytasks.ui.theme.MyTasksTheme
 
 class Workspace : ComponentActivity() {
+
+    companion object {
+        var isInit = mutableStateOf(false)
+    }
+
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        MapKitFactory.setApiKey(App.MAPKIT_API_KEY)
-        MapKitFactory.initialize(this)
-
+        if (!isInit.value) {
+            MapKitFactory.setApiKey(App.MAPKIT_API_KEY)
+            MapKitFactory.initialize(this)
+            isInit.value = true
+        }
         enableEdgeToEdge()
         setContent {
             MyTasksTheme {
@@ -86,6 +98,26 @@ class Workspace : ComponentActivity() {
 @SuppressLint("CoroutineCreationDuringComposition")
 @Composable
 fun Work() {
+
+    val context = LocalContext.current
+
+    var hasLocationPermission by remember { mutableStateOf(false) }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasLocationPermission = isGranted
+    }
+
+    LaunchedEffect(Unit) {
+        hasLocationPermission = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (!hasLocationPermission) {
+            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+    }
 
     val title = listOf(
         "Payments",
@@ -131,7 +163,6 @@ fun Work() {
 fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: MutableIntState) {
 
     val expanded = remember { mutableStateOf(false) }
-    val showMap = remember { mutableStateOf(false) }
 
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
@@ -310,22 +341,12 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                 }
             } else {
                 if (index == 4) {
-                    LaunchedEffect(expanded.value) {
-                        if (expanded.value){
-                            delay(300)
-                            showMap.value = true
-                            MapKitFactory.getInstance().onStop()
-                        } else {
-                            showMap.value = false
-                            MapKitFactory.getInstance().onStart()
-                        }
-                    }
                     if (expanded.value) {
                         AndroidView(
                             factory = { context ->
                                 MapView(context).apply {
                                     map.isRotateGesturesEnabled = true
-                                    showUserLocation()
+                                    showUserLocation(index)
                                 }
                             },
                             Modifier
@@ -347,24 +368,26 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
     }
 }
 
-fun MapView.showUserLocation() {
-    val locationManager: LocationManager = MapKitFactory.getInstance().createLocationManager()
+fun MapView.showUserLocation(index: Int) {
+    if (Workspace.isInit.value && index == 4) {
+        val locationManager: LocationManager = MapKitFactory.getInstance().createLocationManager()
 
-    locationManager.requestSingleUpdate(object : LocationListener {
-        override fun onLocationUpdated(location: com.yandex.mapkit.location.Location) {
+        locationManager.requestSingleUpdate(object : LocationListener {
+            override fun onLocationUpdated(location: com.yandex.mapkit.location.Location) {
 
-            val userLocation = Point(location.position.latitude, location.position.longitude)
-            map.move(
-                CameraPosition(
-                    Point(55.751225, 37.62954),
-                    /* zoom = */ 17.0f,
-                    /* azimuth = */ 150.0f,
-                    /* tilt = */ 30.0f
+                val userLocation = Point(location.position.latitude, location.position.longitude)
+                map.move(
+                    CameraPosition(
+                        Point(55.751225, 37.62954),
+                        /* zoom = */ 17.0f,
+                        /* azimuth = */ 150.0f,
+                        /* tilt = */ 30.0f
+                    )
                 )
-            )
-        }
+            }
 
-        override fun onLocationStatusUpdated(status: LocationStatus) {
-        }
-    })
+            override fun onLocationStatusUpdated(status: LocationStatus) {
+            }
+        })
+    }
 }
