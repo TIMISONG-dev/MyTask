@@ -2,6 +2,7 @@ package timisongdev.mytasks
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -28,6 +29,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -54,16 +56,22 @@ import androidx.core.content.ContextCompat
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.RequestPoint
 import com.yandex.mapkit.RequestPointType
+import com.yandex.mapkit.directions.driving.DrivingOptions
 import com.yandex.mapkit.directions.driving.DrivingRoute
 import com.yandex.mapkit.directions.driving.DrivingRouterType
+import com.yandex.mapkit.directions.driving.DrivingSession
 import com.yandex.mapkit.geometry.Point
+import com.yandex.mapkit.geometry.Polyline
 import com.yandex.mapkit.location.LocationListener
 import com.yandex.mapkit.location.LocationManager
 import com.yandex.mapkit.location.LocationStatus
 import com.yandex.mapkit.map.CameraPosition
+import com.yandex.mapkit.map.MapObjectCollection
+import com.yandex.mapkit.map.MapWindow
 import com.yandex.mapkit.mapview.MapView
 import com.yandex.mapkit.navigation.automotive.NavigationFactory
 import com.yandex.mapkit.navigation.automotive.NavigationListener
+import com.yandex.mapkit.transport.TransportFactory
 import com.yandex.runtime.Error
 import timisongdev.mytasks.ui.theme.MyTasksTheme
 
@@ -126,54 +134,6 @@ fun Work() {
         }
     }
 
-    val navigation = NavigationFactory.createNavigation(DrivingRouterType.COMBINED)
-
-    // Coordinates routes are requested for
-    val requestPoints = listOf(
-        RequestPoint(Point(25.190614, 55.265616), RequestPointType.WAYPOINT, null, null),
-        RequestPoint(Point(25.187532, 55.275413), RequestPointType.WAYPOINT, null, null),
-        RequestPoint(Point(25.189279, 55.282246), RequestPointType.VIAPOINT, null, null),
-        RequestPoint(Point(25.196605, 55.280940), RequestPointType.WAYPOINT, null, null),
-    )
-    navigation.requestRoutes(
-        requestPoints,
-        navigation.guidance.location?.heading,
-        3,
-    )
-    val navigationListener = object : NavigationListener {
-        override fun onRoutesRequested(p0: MutableList<RequestPoint>) {
-            TODO("Not yet implemented")
-        }
-
-        override fun onAlternativesRequested(p0: DrivingRoute) {
-            TODO("Not yet implemented")
-        }
-
-        override fun onUriResolvingRequested(p0: String) {
-            TODO("Not yet implemented")
-        }
-
-        override fun onRoutesBuilt() {
-            val routes = navigation.routes
-            val fastestRoute = routes[0]
-            // Routes received successfully ...
-        }
-
-        override fun onRoutesRequestError(p0: Error) {
-            // An error occurred when requesting routes ...
-        }
-
-        override fun onResetRoutes() {
-            TODO("Not yet implemented")
-        }
-
-        // Override other listener's methods
-    }
-
-    navigation.addListener(navigationListener)
-
-
-
     val title = listOf(
         "Payments",
         "Donate",
@@ -218,6 +178,23 @@ fun Work() {
 fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: MutableIntState) {
 
     val expanded = remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+
+    val navigation = NavigationFactory.createNavigation(DrivingRouterType.COMBINED)
+
+    // Coordinates routes are requested for
+    val requestPoints = listOf(
+        RequestPoint(Point(25.190614, 55.265616), RequestPointType.WAYPOINT, null, null),
+        RequestPoint(Point(25.187532, 55.275413), RequestPointType.WAYPOINT, null, null),
+        RequestPoint(Point(25.189279, 55.282246), RequestPointType.WAYPOINT, null, null),
+        RequestPoint(Point(25.196605, 55.280940), RequestPointType.WAYPOINT, null, null),
+    )
+    navigation.requestRoutes(
+        requestPoints,
+        navigation.guidance.location?.heading,
+        3,
+    )
 
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
@@ -397,6 +374,11 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
             } else {
                 if (index == 4) {
                     if (expanded.value) {
+                        Button(onClick = { BuildRoute(context) }) {
+                            Text(
+                                "Road"
+                            )
+                        }
                         AndroidView(
                             factory = { context ->
                                 MapView(context).apply {
@@ -423,6 +405,56 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
             }
         }
     }
+}
+fun BuildRoute(context: Context) {
+    // Точки маршрута
+    val requestPoints = listOf(
+        RequestPoint(Point(25.190614, 55.265616), RequestPointType.WAYPOINT, null, null),
+        RequestPoint(Point(25.187532, 55.275413), RequestPointType.WAYPOINT, null, null),
+        RequestPoint(Point(25.189279, 55.282246), RequestPointType.WAYPOINT, null, null),
+        RequestPoint(Point(25.196605, 55.280940), RequestPointType.WAYPOINT, null, null)
+    )
+
+    // Создание экземпляра Navigation
+    val navigation = NavigationFactory.createNavigation(DrivingRouterType.COMBINED)
+    val mapObj : MapObjectCollection
+    val mapView : MapView = MapView(context)
+
+    mapObj = mapView.mapWindow.map.mapObjects.addCollection()
+
+    // Слушатель для отслеживания результатов
+    val navigationListener = object : NavigationListener {
+        override fun onRoutesRequested(p0: MutableList<RequestPoint>) {
+            TODO("Not yet implemented")
+        }
+
+        override fun onAlternativesRequested(p0: DrivingRoute) {
+            TODO("Not yet implemented")
+        }
+
+        override fun onUriResolvingRequested(p0: String) {
+            TODO("Not yet implemented")
+        }
+
+        override fun onRoutesBuilt() {
+            val routes = navigation.routes
+            val fastestRoute = routes[0]
+            // Выводим маршрут на карту
+            mapObj.addPolyline(fastestRoute.geometry)
+        }
+
+        override fun onRoutesRequestError(error: Error) {
+            // Обработка ошибки
+        }
+
+        override fun onResetRoutes() {}
+    }
+
+    // Подписываемся на события навигации
+    navigation.addListener(navigationListener)
+
+    // Запрашиваем маршрут
+    navigation.requestRoutes(requestPoints, null, 3)
 }
 
 fun MapView.showUserLocation() {
