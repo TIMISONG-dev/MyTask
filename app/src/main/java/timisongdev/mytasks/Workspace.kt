@@ -2,77 +2,34 @@ package timisongdev.mytasks
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.compose.setContent
+import androidx.activity.compose.*
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableIntState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.foundation.*
+import androidx.compose.foundation.shape.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.yandex.mapkit.MapKitFactory
-import com.yandex.mapkit.RequestPoint
-import com.yandex.mapkit.RequestPointType
-import com.yandex.mapkit.directions.driving.DrivingOptions
-import com.yandex.mapkit.directions.driving.DrivingRoute
-import com.yandex.mapkit.directions.driving.DrivingRouterType
-import com.yandex.mapkit.directions.driving.DrivingSession
 import com.yandex.mapkit.geometry.Point
-import com.yandex.mapkit.geometry.Polyline
-import com.yandex.mapkit.location.LocationListener
-import com.yandex.mapkit.location.LocationManager
-import com.yandex.mapkit.location.LocationStatus
+import com.yandex.mapkit.location.*
 import com.yandex.mapkit.map.CameraPosition
-import com.yandex.mapkit.map.MapObjectCollection
-import com.yandex.mapkit.map.MapWindow
 import com.yandex.mapkit.mapview.MapView
-import com.yandex.mapkit.navigation.automotive.NavigationFactory
-import com.yandex.mapkit.navigation.automotive.NavigationListener
-import com.yandex.mapkit.transport.TransportFactory
-import com.yandex.runtime.Error
 import timisongdev.mytasks.ui.theme.MyTasksTheme
 
 class Workspace : ComponentActivity() {
@@ -116,6 +73,7 @@ fun Work() {
 
     val context = LocalContext.current
 
+    // Разрешение на геолокацию для карты
     var hasLocationPermission by remember { mutableStateOf(false) }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
@@ -142,7 +100,8 @@ fun Work() {
         "Map",
         "Last order",
         "Work",
-        "Slots"
+        "Slots",
+        "Support"
     )
 
     val cells = remember{ mutableIntStateOf(2) }
@@ -163,7 +122,7 @@ fun Work() {
         ) {
             items(title.size) { index ->
                 GridItem(
-                    title = "${title[index]}, $index",
+                    title = title[index],
                     index = index,
                     cells = cells,
                     openCell = openCell
@@ -179,8 +138,6 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
 
     val expanded = remember { mutableStateOf(false) }
 
-    val context = LocalContext.current
-
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
     val screenWidth = configuration.screenWidthDp.dp
@@ -188,6 +145,14 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
     val currency = "$"
 
     val pay = listOf(
+        1000,
+        2000,
+        102,
+        130,
+        1000,
+        2000,
+        102,
+        130,
         1000,
         2000,
         102,
@@ -200,7 +165,7 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
         370
     )
 
-    val starts = listOf(
+    val stars = listOf(
         3,
         10,
         9
@@ -210,6 +175,37 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
         20000,
         10231,
         11984
+    )
+
+    val orders = listOf(
+        "Москва, Проспект Буденного, 22к1",
+        "Щербинка, Главная улица, 1к1"
+    )
+
+    val slots = listOf(
+        "10:00 - 18:00",
+        "13:32 - 19:58"
+    )
+
+    val icons = listOf(
+        R.drawable.ic_payments,
+        R.drawable.ic_fastfood_near,
+        R.drawable.ic_star_half,
+        R.drawable.ic_steps,
+        null,
+        R.drawable.ic_last_order,
+        null,
+        R.drawable.ic_slots,
+        R.drawable.ic_support_agent
+    )
+
+    val indexToListMap = mapOf(
+        0 to pay,
+        1 to donate,
+        2 to stars,
+        3 to steps,
+        5 to orders,
+        7 to slots
     )
 
     val exHeight by animateDpAsState(
@@ -222,6 +218,7 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
         animationSpec = tween(300), label = ""
     )
 
+    // Показываем либо один выбранный tile Grid или все tiles
     if (openCell.intValue == -1 || openCell.intValue == index) {
         Column(
             Modifier
@@ -255,55 +252,46 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
             )
             if (index != 4 && index != 6) {
                 if (expanded.value) {
-                    for (item in if (index == 0) pay else if (index == 1) donate else if (index == 2) starts else if (index == 3) steps else steps) {
-                        Spacer(Modifier.padding(8.dp))
-                        Row(
-                            Modifier
-                                .clip(RoundedCornerShape(14.dp))
-                                .width(300.dp)
-                                .background(MaterialTheme.colorScheme.surface)
-                                .padding(8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                painter =
-                                when (index) {
-                                    0 -> painterResource(R.drawable.ic_payments)
-                                    1 -> painterResource(R.drawable.ic_fastfood_near)
-                                    2 -> painterResource(R.drawable.ic_star_half)
-                                    3 -> painterResource(R.drawable.ic_steps)
-                                    5 -> painterResource(R.drawable.ic_last_order)
-                                    7 -> painterResource(R.drawable.ic_slots)
-                                    else -> painterResource(R.drawable.ic_visibility_off)
-                                },
-                                contentDescription = "",
-                                tint = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier
-                                    .size(32.dp)
-                            )
-                            if (index == 0 || index == 1 || index == 2 || index == 3) {
-                                Text(
-                                    text = when (index) {
-                                        0 -> "$item"
-                                        1 -> "$item"
-                                        2 -> "$item"
-                                        3 -> "$item"
-                                        else -> "Error lol"
-                                    },
-                                    Modifier
-                                        .padding(5.dp),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 24.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
+                    // Получаем данные для текущего индекса
+                    val list = indexToListMap[index] ?: emptyList<Any>()
+                    Column (
+                        Modifier
+                            .verticalScroll(rememberScrollState())
+                    ){
+                        list.forEach { item ->
+                            Spacer(Modifier.padding(8.dp))
+                            Row(
+                                Modifier
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .width(300.dp)
+                                    .background(MaterialTheme.colorScheme.surface)
+                                    .padding(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    painter = painterResource(icons.getOrNull(index) ?: R.drawable.ic_visibility_off),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(32.dp)
                                 )
-                                if (index == 0 || index == 1) {
+                                if (index < 4 || index == 5 || index == 7) {
                                     Text(
-                                        text = currency,
-                                        fontSize = 24.sp,
+                                        text = "$item",
+                                        Modifier
+                                            .padding(8.dp),
                                         fontWeight = FontWeight.Bold,
+                                        fontSize = if (index == 5) 18.sp else 24.sp,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
+                                    if (index == 0 || index == 1) {
+                                        Text(
+                                            text = currency,
+                                            fontSize = 24.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -315,32 +303,21 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Icon(
-                            painter =
-                            when (index) {
-                                0 -> painterResource(R.drawable.ic_payments)
-                                1 -> painterResource(R.drawable.ic_fastfood_near)
-                                2 -> painterResource(R.drawable.ic_star_half)
-                                3 -> painterResource(R.drawable.ic_steps)
-                                5 -> painterResource(R.drawable.ic_last_order)
-                                7 -> painterResource(R.drawable.ic_slots)
-                                else -> painterResource(R.drawable.ic_visibility_off)
-                            },
-                            contentDescription = "",
+                            painter = painterResource(icons.getOrNull(index) ?: R.drawable.ic_visibility_off),
+                            contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier
-                                .size(64.dp)
+                            modifier = Modifier.size(64.dp)
                         )
-                        if (index == 0 || index == 1 || index == 2 || index == 3) {
+                        if (index in 0..3) {
                             Text(
                                 text = when (index) {
                                     0 -> pay[pay.size - 1].toString()
                                     1 -> donate[donate.size - 1].toString()
-                                    2 -> starts[starts.size - 1].toString()
+                                    2 -> stars[stars.size - 1].toString()
                                     3 -> steps[steps.size - 1].toString()
                                     else -> "Error lol"
                                 },
-                                Modifier
-                                    .padding(5.dp),
+                                Modifier.padding(5.dp),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 24.sp,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -357,91 +334,40 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                     }
                 }
             } else {
-                if (index == 4) {
-                    if (expanded.value) {
-                        Button(onClick = { BuildRoute(context) }) {
-                            Text(
-                                "Road"
+                when (index) {
+                    4 -> {
+                        if (expanded.value) {
+                            AndroidView(
+                                factory = { context ->
+                                    MapView(context).apply {
+                                        map.isRotateGesturesEnabled = true
+                                        map.isTiltGesturesEnabled = true
+                                        map.isScrollGesturesEnabled = true
+                                        showUserLocation()
+                                    }
+                                },
+                                Modifier
+                                    .padding(8.dp)
+                                    .clip(RoundedCornerShape(24.dp))
+                                    .height(300.dp)
                             )
+                        } else {
+                            Text("Map. Closed")
                         }
-                        AndroidView(
-                            factory = { context ->
-                                MapView(context).apply {
-                                    map.isRotateGesturesEnabled = true
-                                    map.isTiltGesturesEnabled = true
-                                    map.isScrollGesturesEnabled = true
-                                    showUserLocation()
-                                }
-                            },
-                            Modifier
-                                .padding(8.dp)
-                                .clip(RoundedCornerShape(24.dp))
-                        )
-                    } else {
-                        Text (
-                            "Map. Closed"
-                        )
                     }
-                } else {
-                    Text(
-                        text = "Hello World"
-                    )
+                    6 -> {
+                        Button(onClick = {}) {
+                            Text("Start work")
+                        }
+                    }
                 }
             }
         }
     }
 }
-fun BuildRoute(context: Context) {
-    if (Workspace.isInit.value) {
-        // Точки маршрута
-        val requestPoints = listOf(
-            RequestPoint(Point(25.190614, 55.265616), RequestPointType.WAYPOINT, null, null),
-            RequestPoint(Point(25.187532, 55.275413), RequestPointType.WAYPOINT, null, null),
-            RequestPoint(Point(25.189279, 55.282246), RequestPointType.WAYPOINT, null, null),
-            RequestPoint(Point(25.196605, 55.280940), RequestPointType.WAYPOINT, null, null)
-        )
 
-        // Создание экземпляра Navigation
-        val navigation = NavigationFactory.createNavigation(DrivingRouterType.COMBINED)
-        val mapObj : MapObjectCollection
-        val mapView : MapView = MapView(context)
-
-        mapObj = mapView.mapWindow.map.mapObjects.addCollection()
-
-        // Слушатель для отслеживания результатов
-        val navigationListener = object : NavigationListener {
-            override fun onRoutesRequested(p0: MutableList<RequestPoint>) {
-                TODO("onRoutesRequested Not yet implemented")
-            }
-
-            override fun onAlternativesRequested(p0: DrivingRoute) {
-                TODO("onAlternativesRequested Not yet implemented")
-            }
-
-            override fun onUriResolvingRequested(p0: String) {
-                TODO("onUriResolvingRequested Not yet implemented")
-            }
-
-            override fun onRoutesBuilt() {
-                val routes = navigation.routes
-                val fastestRoute = routes[0]
-                // Выводим маршрут на карту
-                mapObj.addPolyline(fastestRoute.geometry)
-            }
-
-            override fun onRoutesRequestError(error: Error) {
-                // Обработка ошибки
-            }
-
-            override fun onResetRoutes() {}
-        }
-
-        // Подписываемся на события навигации
-        navigation.addListener(navigationListener)
-
-        // Запрашиваем маршрут
-        navigation.requestRoutes(requestPoints, null, 3)
-    }
+fun buildRoute() {
+    // TODO: Webview route
 }
 
 fun MapView.showUserLocation() {
