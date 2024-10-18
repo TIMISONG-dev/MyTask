@@ -2,8 +2,14 @@ package timisongdev.mytasks
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.Location
+import android.net.Uri
 import android.os.Bundle
+import android.util.Log
+import android.webkit.*
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.*
 import androidx.activity.enableEdgeToEdge
@@ -25,6 +31,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.startActivity
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.location.*
@@ -36,11 +45,13 @@ class Workspace : ComponentActivity() {
 
     companion object {
         var isInit = mutableStateOf(false)
+        var startLocation = ""
     }
 
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         if (!isInit.value) {
             MapKitFactory.setApiKey(App.MAPKIT_API_KEY)
             MapKitFactory.initialize(this)
@@ -73,6 +84,8 @@ fun Work() {
 
     val context = LocalContext.current
 
+    val mapView = remember { MapView(context) }
+
     // Разрешение на геолокацию для карты
     var hasLocationPermission by remember { mutableStateOf(false) }
 
@@ -91,6 +104,15 @@ fun Work() {
             locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         }
     }
+
+    val fusedLocationClient: FusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(context)
+    fusedLocationClient.lastLocation
+        .addOnSuccessListener { location: Location? ->
+            location?.let {
+                val startLocation = "${it.latitude},${it.longitude}"
+                Workspace.startLocation = startLocation
+            }
+        }
 
     val title = listOf(
         "Payments",
@@ -125,16 +147,17 @@ fun Work() {
                     title = title[index],
                     index = index,
                     cells = cells,
-                    openCell = openCell
+                    openCell = openCell,
+                    mapView = mapView
                 )
             }
         }
     }
 }
 
-@SuppressLint("CoroutineCreationDuringComposition")
+@SuppressLint("CoroutineCreationDuringComposition", "SetJavaScriptEnabled")
 @Composable
-fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: MutableIntState) {
+fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: MutableIntState, mapView: MapView) {
 
     val expanded = remember { mutableStateOf(false) }
 
@@ -143,6 +166,8 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
     val screenWidth = configuration.screenWidthDp.dp
 
     val currency = "$"
+
+    val mapMode = remember { mutableStateOf("map") }
 
     val pay = listOf(
         1000,
@@ -186,6 +211,8 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
         "10:00 - 18:00",
         "13:32 - 19:58"
     )
+
+    var defd = remember { "fdf" }
 
     val icons = listOf(
         R.drawable.ic_payments,
@@ -257,9 +284,12 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                     Column (
                         Modifier
                             .verticalScroll(rememberScrollState())
+                            .fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ){
+                        Spacer(Modifier.padding(8.dp))
                         list.forEach { item ->
-                            Spacer(Modifier.padding(8.dp))
                             Row(
                                 Modifier
                                     .clip(RoundedCornerShape(14.dp))
@@ -294,6 +324,7 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                                     }
                                 }
                             }
+                            Spacer(Modifier.padding(8.dp))
                         }
                     }
                 } else {
@@ -337,9 +368,22 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                 when (index) {
                     4 -> {
                         if (expanded.value) {
+                            Button(onClick = {
+                                if (mapMode.value == "route"){
+                                    mapMode.value = "map"
+                                } else {
+                                    mapMode.value = "route"
+                                }
+                            }) {
+                                Text(
+                                    defd
+                                )
+                            }
+                        }
+                        if (expanded.value && mapMode.value == "map") {
                             AndroidView(
-                                factory = { context ->
-                                    MapView(context).apply {
+                                factory = {
+                                    mapView.apply {
                                         map.isRotateGesturesEnabled = true
                                         map.isTiltGesturesEnabled = true
                                         map.isScrollGesturesEnabled = true
@@ -349,10 +393,90 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                                 Modifier
                                     .padding(8.dp)
                                     .clip(RoundedCornerShape(24.dp))
-                                    .height(300.dp)
+                                    .height(screenHeight)
                             )
                         } else {
-                            Text("Map. Closed")
+                            if (expanded.value && mapMode.value == "route") {
+                                AndroidView(
+                                    factory = { context ->
+                                        WebView(context).apply {
+                                            settings.javaScriptEnabled = true
+                                            webViewClient = WebViewClient()
+                                            settings.useWideViewPort = true
+                                            settings.loadWithOverviewMode = true
+                                            settings.javaScriptCanOpenWindowsAutomatically = true
+                                            webChromeClient = object : WebChromeClient() {
+                                                override fun onGeolocationPermissionsShowPrompt(
+                                                    origin: String?,
+                                                    callback: GeolocationPermissions.Callback?
+                                                ) {
+                                                    callback?.invoke(origin, true, false)
+                                                }
+                                            }
+                                            webViewClient = object : WebViewClient() {
+                                                @SuppressLint("QueryPermissionsNeeded")
+                                                @Deprecated("Deprecated in Java")
+                                                override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                                                    url?.let {
+                                                        val uri = Uri.parse(it)
+                                                        if (it.startsWith("intent://")) {
+                                                            try {
+                                                                // Попытка распарсить intent из URI
+                                                                val intent = Intent.parseUri(it, Intent.URI_INTENT_SCHEME)
+                                                                val appPackageName = intent.data?.schemeSpecificPart
+
+                                                                // Проверка наличия активности для этого intent
+                                                                val packageManager = view?.context?.packageManager
+                                                                val resolveInfo = packageManager?.resolveActivity(intent, PackageManager.MATCH_ALL)
+
+                                                                if (resolveInfo != null) {
+                                                                    // Приложение установлено — запускаем его
+                                                                    context.startActivity(intent)
+                                                                } else {
+                                                                    // Если приложение не установлено — открываем Google Play или fallback URL
+                                                                    val fallbackUrl = intent.getStringExtra("browser_fallback_url")
+                                                                    if (fallbackUrl != null) {
+                                                                        // Безопасно вызываем loadUrl через view?.loadUrl
+                                                                        view?.loadUrl(fallbackUrl)
+                                                                    } else {
+                                                                        try {
+                                                                            val playStoreIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$appPackageName"))
+                                                                            view?.context?.startActivity(playStoreIntent)
+                                                                        } catch (e: Exception) {
+                                                                            // На случай если Google Play недоступен, можно показать ошибку
+                                                                            e.printStackTrace()
+                                                                        }
+                                                                    }
+                                                                }
+                                                                return true
+                                                            } catch (e: Exception) {
+                                                                e.printStackTrace()
+                                                            }
+                                                        } else {
+                                                            try {
+                                                                val intent = Intent(Intent.ACTION_VIEW, uri)
+                                                                view?.context?.startActivity(intent)
+                                                                return true
+                                                            } catch (e: ActivityNotFoundException) {
+                                                                return false
+                                                            }
+                                                        }
+                                                    }
+                                                    return false // Оставляем стандартное поведение для остальных URL
+                                                }
+                                            }
+                                            val url = "https://yandex.ru/maps/?rtext=${Workspace.startLocation}~55.755814,37.617635&rtt=pd"
+                                            loadUrl(url)
+                                        }
+                                    },
+                                    Modifier
+                                        .padding(8.dp)
+                                        .clip(RoundedCornerShape(24.dp))
+                                        .height(screenHeight)
+                                )
+                            } else {
+                                Text("Map. Closed")
+                            }
                         }
                     }
                     6 -> {
@@ -366,10 +490,6 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
     }
 }
 
-fun buildRoute() {
-    // TODO: Webview route
-}
-
 fun MapView.showUserLocation() {
     if (Workspace.isInit.value) {
         val locationManager: LocationManager = MapKitFactory.getInstance().createLocationManager()
@@ -380,7 +500,7 @@ fun MapView.showUserLocation() {
                 val userLocation = Point(location.position.latitude, location.position.longitude)
                 map.move(
                     CameraPosition(
-                        Point(55.751225, 37.62954),
+                        userLocation,
                         /* zoom = */ 17.0f,
                         /* azimuth = */ 150.0f,
                         /* tilt = */ 30.0f
