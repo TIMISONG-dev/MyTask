@@ -212,8 +212,6 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
         "13:32 - 19:58"
     )
 
-    var defd = remember { "fdf" }
-
     val icons = listOf(
         R.drawable.ic_payments,
         R.drawable.ic_fastfood_near,
@@ -376,7 +374,7 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                                 }
                             }) {
                                 Text(
-                                    defd
+                                    "Route / Map"
                                 )
                             }
                         }
