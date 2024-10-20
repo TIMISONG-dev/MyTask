@@ -473,7 +473,11 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                                         .height(screenHeight)
                                 )
                             } else {
-                                Text("Map. Closed")
+                                Text(
+                                    "Map. Closed",
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
                             }
                         }
                     }
