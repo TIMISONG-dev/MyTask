@@ -8,7 +8,6 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.webkit.*
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.*
@@ -20,6 +19,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.shape.*
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
@@ -31,7 +31,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import androidx.core.content.ContextCompat.startActivity
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.yandex.mapkit.MapKitFactory
@@ -130,7 +131,8 @@ fun Work() {
     val openCell = remember { mutableIntStateOf(-1) }
 
     Column (
-        Modifier.fillMaxSize(),
+        Modifier
+            .fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ){
@@ -164,6 +166,10 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
     val screenWidth = configuration.screenWidthDp.dp
+
+    val defaultOnColor = MaterialTheme.colorScheme.surface
+
+    val context = LocalContext.current
 
     val currency = "$"
 
@@ -271,7 +277,7 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                 text = title,
                 fontWeight = FontWeight.Bold,
                 fontSize = if (expanded.value) 20.sp else 16.sp,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = defaultOnColor,
                 modifier = Modifier
                     .padding(8.dp)
             )
@@ -281,48 +287,63 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                     val list = indexToListMap[index] ?: emptyList<Any>()
                     Column (
                         Modifier
-                            .verticalScroll(rememberScrollState())
+                            .then(if(index != 8) Modifier.verticalScroll(rememberScrollState()) else Modifier)
                             .fillMaxSize(),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ){
-                        Spacer(Modifier.padding(8.dp))
-                        list.forEach { item ->
-                            Row(
-                                Modifier
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .width(300.dp)
-                                    .background(MaterialTheme.colorScheme.surface)
-                                    .padding(8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    painter = painterResource(icons.getOrNull(index) ?: R.drawable.ic_visibility_off),
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.size(32.dp)
-                                )
-                                if (index < 4 || index == 5 || index == 7) {
-                                    Text(
-                                        text = "$item",
-                                        Modifier
-                                            .padding(8.dp),
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = if (index == 5) 18.sp else 24.sp,
-                                        color = MaterialTheme.colorScheme.onSurface
+                        // Support
+                        if (index == 8) {
+                            val viewModel: Chat.ChatViewModel = viewModel(factory = object : ViewModelProvider.Factory {
+                                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                    return Chat.ChatViewModel(context) as T
+                                }
+                            })
+
+                            Chat.ChatBlank(messages = viewModel.messages) { message ->
+                                viewModel.sendMessage(message)
+                            }
+                        } else {
+                            Spacer(Modifier.padding(8.dp))
+                            list.forEach { item ->
+                                Row(
+                                    Modifier
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .width(300.dp)
+                                        .background(MaterialTheme.colorScheme.surface)
+                                        .padding(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        painter = painterResource(
+                                            icons.getOrNull(index) ?: R.drawable.ic_visibility_off
+                                        ),
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.size(32.dp)
                                     )
-                                    if (index == 0 || index == 1) {
+                                    if (index < 4 || index == 5 || index == 7) {
                                         Text(
-                                            text = currency,
-                                            fontSize = 24.sp,
+                                            text = "$item",
+                                            Modifier
+                                                .padding(8.dp),
                                             fontWeight = FontWeight.Bold,
+                                            fontSize = if (index == 5) 18.sp else 24.sp,
                                             color = MaterialTheme.colorScheme.onSurface
                                         )
+                                        if (index == 0 || index == 1) {
+                                            Text(
+                                                text = currency,
+                                                fontSize = 24.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
                                     }
                                 }
+                                Spacer(Modifier.padding(8.dp))
                             }
-                            Spacer(Modifier.padding(8.dp))
                         }
                     }
                 } else {
@@ -334,7 +355,7 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                         Icon(
                             painter = painterResource(icons.getOrNull(index) ?: R.drawable.ic_visibility_off),
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurface,
+                            tint = defaultOnColor,
                             modifier = Modifier.size(64.dp)
                         )
                         if (index in 0..3) {
@@ -349,14 +370,14 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                                 Modifier.padding(5.dp),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 24.sp,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = defaultOnColor
                             )
                             if (index == 0 || index == 1) {
                                 Text(
                                     text = currency,
                                     fontSize = 24.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = defaultOnColor
                                 )
                             }
                         }
@@ -476,7 +497,7 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                                 Text(
                                     "Map. Closed",
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = defaultOnColor
                                 )
                             }
                         }

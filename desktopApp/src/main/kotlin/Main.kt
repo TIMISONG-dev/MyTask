@@ -4,6 +4,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -11,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -69,7 +71,7 @@ fun App() {
 
         Column (
             Modifier
-                .background(Color.White)
+                .background(MaterialTheme.colors.background)
                 .fillMaxSize(),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
@@ -79,58 +81,85 @@ fun App() {
                     .padding(8.dp)
                     .width(200.dp)
                     .clip(RoundedCornerShape(24.dp))
-                    .background(Color.LightGray)
+                    .background(Color(224, 226, 232))
                     .wrapContentSize(),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ){
-                Text(
-                    text = "Do you have account?",
-                    Modifier
-                        .padding(8.dp),
-                    fontSize = 20.sp,
-                    color = Color.Black,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
-                Button(onClick = {
-                    scope.launch {
-                        // sheetState.bottomSheetState.expand()
-                    }
-                    pickHeight = 100.dp
-                    mode = "Register"
-                },
-                ) {
-                    Text (
-                        text = "Reg"
+                if (pageLevel == 1) {
+                    Text(
+                        text = "Do you have account? No? Fuck u)))))))))",
+                        Modifier
+                            .padding(8.dp),
+                        fontSize = 20.sp,
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
                     )
-                }
-                Text(
-                    text = "or",
-                    fontSize = 16.sp,
-                    color = Color.Gray
-                )
-                Button(onClick = {
-                    scope.launch {
-                        pageLevel = 1
-                        // sheetState.bottomSheetState.expand()
+                    Button(onClick = {
+                        scope.launch {
+                            // sheetState.bottomSheetState.expand()
+                        }
+                        pickHeight = 100.dp
+                        mode = "Register"
+                    },
+                        colors = ButtonDefaults.buttonColors(Color(45, 98, 139))
+                    ) {
+                        Text (
+                            text = "Reg",
+                            color = Color.White
+                        )
                     }
-                    pageLevel = 1
-                    pickHeight = 100.dp
-                    mode = "Login"
-                }) {
-                    Text (
-                        text = "Log"
+                    Text(
+                        text = "or",
+                        fontSize = 16.sp,
+                        color = Color.Gray
                     )
+                    Button(onClick = {
+                        if(pageLevel < 2) {
+                            pageLevel++
+                        } else {
+                            pageLevel--
+                        }
+                        mode = "Login"
+                    },
+                        colors = ButtonDefaults.buttonColors(Color(45, 98, 139))
+                    ) {
+                        Text (
+                            text = "Log",
+                            color = Color.White
+                        )
+                    }
+                    Spacer(modifier = Modifier.padding(8.dp))
+                } else {
+                    TextField(
+                        value = email,
+                        onValueChange = {
+                                newText -> email = newText
+                        },
+                        label = {
+                            Text (
+                                "Type your email: $pageLevel"
+                            )
+                        },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                    )
+                    Button (onClick = {
+                        pageLevel--
+                    }){
+                        Text (
+                            "Back"
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.padding(8.dp))
             }
         }
     }
 }
 
 fun main() = application {
-    Window(onCloseRequest = ::exitApplication) {
+    Window(title="myTasks", onCloseRequest = ::exitApplication) {
         App()
     }
 }
