@@ -32,6 +32,10 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.mapview.MapView
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import timisongdev.mytasks.ui.theme.MyTasksTheme
 
 class Workspace : ComponentActivity() {
@@ -150,11 +154,14 @@ fun Work() {
     }
 }
 
+@OptIn(DelicateCoroutinesApi::class)
 @SuppressLint("CoroutineCreationDuringComposition", "SetJavaScriptEnabled")
 @Composable
 fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: MutableIntState, mapView: MapView) {
 
     val expanded = remember { mutableStateOf(false) }
+
+    var getCompare = remember { mutableStateOf("Start work") }
 
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
@@ -294,12 +301,32 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                             viewModel.sendMessage(message)
                         }
                     }
+                    if (index == 9) {
+                        Text (
+                            "Hello, User. Your information:",
+                            fontSize = 18.sp,
+                            color = defaultOnColor
+                        )
+                    }
+                    // YandexMap
                     if (index == 4) {
                         YandexMap.Mapa()
                     }
                     if (index == 6) {
-                        Button(onClick = {}) {
-                            Text("Start work")
+                        // Скобелевская улица, 19
+                        // Чечерский проезд, 51
+                        val workerLocation = "Москва, Южное Бутово, Чечерский проезд, 51"
+                        val orderLocation = "Москва, Южное Бутово, Чечерский проезд, 100"
+                        Button(onClick = {
+                            GlobalScope.launch(Dispatchers.Main) {
+                                getCompare.value =
+                                    Working.compareLocations(workerLocation, orderLocation, App.GEO_API_KEY)
+                                        .toString()
+                            }
+                        }) {
+                            Text(
+                                getCompare.value
+                            )
                         }
                     } else {
                         Spacer(Modifier.padding(8.dp))
@@ -321,6 +348,7 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                                     tint = MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier.size(32.dp)
                                 )
+                                // Some lists
                                 if (index < 4 || index == 5 || index == 7) {
                                     Text(
                                         text = "$item",
@@ -345,38 +373,45 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                     }
                 }
             } else {
-                Row(
-                    Modifier,
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        painter = painterResource(icons.getOrNull(index) ?: R.drawable.ic_visibility_off),
-                        contentDescription = null,
-                        tint = defaultOnColor,
-                        modifier = Modifier.size(64.dp)
-                    )
-                    if (index in 0..3) {
-                        Text(
-                            text = when (index) {
-                                0 -> pay[pay.size - 1].toString()
-                                1 -> donate[donate.size - 1].toString()
-                                2 -> stars[stars.size - 1].toString()
-                                3 -> steps[steps.size - 1].toString()
-                                else -> "Error lol"
-                            },
-                            Modifier.padding(5.dp),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 24.sp,
-                            color = defaultOnColor
+                // Start Working
+                if (index == 6) {
+                    Button(onClick = {}) {
+                        Text("Start work")
+                    }
+                } else {
+                    Row(
+                        Modifier,
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(icons.getOrNull(index) ?: R.drawable.ic_visibility_off),
+                            contentDescription = null,
+                            tint = defaultOnColor,
+                            modifier = Modifier.size(64.dp)
                         )
-                        if (index == 0 || index == 1) {
+                        if (index in 0..3) {
                             Text(
-                                text = currency,
-                                fontSize = 24.sp,
+                                text = when (index) {
+                                    0 -> pay[pay.size - 1].toString()
+                                    1 -> donate[donate.size - 1].toString()
+                                    2 -> stars[stars.size - 1].toString()
+                                    3 -> steps[steps.size - 1].toString()
+                                    else -> "Error lol"
+                                },
+                                Modifier.padding(5.dp),
                                 fontWeight = FontWeight.Bold,
+                                fontSize = 24.sp,
                                 color = defaultOnColor
                             )
+                            if (index == 0 || index == 1) {
+                                Text(
+                                    text = currency,
+                                    fontSize = 24.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = defaultOnColor
+                                )
+                            }
                         }
                     }
                 }
