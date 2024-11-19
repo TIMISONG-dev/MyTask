@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.webkit.*
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,12 +27,12 @@ import com.yandex.mapkit.mapview.MapView
 
 class YandexMap {
     companion object {
+        val mapMode = mutableStateOf("map")
         @SuppressLint("SetJavaScriptEnabled")
         @Composable
         fun Mapa() {
             val localContext = LocalContext.current
-            val mapMode = remember { mutableStateOf("map") }
-            val mapView = remember { MapView(localContext) }
+
             val configuration = LocalConfiguration.current
             val screenHeight = configuration.screenHeightDp.dp
 
@@ -50,7 +51,7 @@ class YandexMap {
             if (mapMode.value == "map") {
                 AndroidView(
                     factory = {
-                        mapView.apply {
+                        Workspace.getMap(localContext).apply {
                             map.isRotateGesturesEnabled = true
                             map.isTiltGesturesEnabled = true
                             map.isScrollGesturesEnabled = true
@@ -132,8 +133,19 @@ class YandexMap {
                                         return false // Оставляем стандартное поведение для остальных URL
                                     }
                                 }
-                                val url = "https://yandex.ru/maps/?rtext=${Workspace.startLocation}~55.755814,37.617635&rtt=pd"
-                                loadUrl(url)
+                                if (Working.order == null) {
+                                    val url =
+                                        "https://yandex.ru/maps/?rtext=${Workspace.startLocation}~55.755814,37.617635&rtt=pd"
+                                    loadUrl(url)
+                                } else {
+                                    val orderString = Working.order
+                                    if (orderString != null) {
+                                        val (lat, long) = orderString
+                                        val url =
+                                            "https://yandex.ru/maps/?rtext=${Workspace.startLocation}~$lat,$long&rtt=pd"
+                                        loadUrl(url)
+                                    }
+                                }
                             }
                         },
                         Modifier

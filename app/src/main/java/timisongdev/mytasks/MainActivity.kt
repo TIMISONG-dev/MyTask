@@ -464,7 +464,7 @@ fun Greeting() {
                                         tint = if (isClickedF) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface
                                     )
                                     Text (
-                                        text = "Walter",
+                                        text = "Walking",
                                         Modifier
                                             .padding(8.dp),
                                         color = if (isClickedF) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface,
@@ -495,7 +495,7 @@ fun Greeting() {
                                         tint = if (isClickedS) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface
                                     )
                                     Text (
-                                        text = "Jesse",
+                                        text = "Biker",
                                         Modifier
                                             .padding(8.dp),
                                         color = if (isClickedS) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface,

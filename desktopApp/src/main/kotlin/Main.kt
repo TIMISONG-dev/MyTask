@@ -88,7 +88,7 @@ fun App() {
             ){
                 if (pageLevel == 1) {
                     Text(
-                        text = "Do you have account? No? Fuck u)))))))))",
+                        text = "Do you have account?",
                         Modifier
                             .padding(8.dp),
                         fontSize = 20.sp,

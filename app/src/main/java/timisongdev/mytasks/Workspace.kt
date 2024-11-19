@@ -2,6 +2,7 @@ package timisongdev.mytasks
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
@@ -33,9 +34,7 @@ import com.google.android.gms.location.LocationServices
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.mapview.MapView
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import timisongdev.mytasks.ui.theme.MyTasksTheme
 
 class Workspace : ComponentActivity() {
@@ -43,6 +42,12 @@ class Workspace : ComponentActivity() {
     companion object {
         var isInit = mutableStateOf(false)
         var startLocation = ""
+
+        fun getMap(context: Context): MapView {
+            val mapView = MapView(context)
+
+            return mapView
+        }
     }
 
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -80,8 +85,6 @@ class Workspace : ComponentActivity() {
 fun Work() {
 
     val context = LocalContext.current
-
-    val mapView = remember { MapView(context) }
 
     // Разрешение на геолокацию для карты
     var hasLocationPermission by remember { mutableStateOf(false) }
@@ -146,8 +149,7 @@ fun Work() {
                     title = title[index],
                     index = index,
                     cells = cells,
-                    openCell = openCell,
-                    mapView = mapView
+                    openCell = openCell
                 )
             }
         }
@@ -157,11 +159,15 @@ fun Work() {
 @OptIn(DelicateCoroutinesApi::class)
 @SuppressLint("CoroutineCreationDuringComposition", "SetJavaScriptEnabled")
 @Composable
-fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: MutableIntState, mapView: MapView) {
+fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: MutableIntState) {
 
     val expanded = remember { mutableStateOf(false) }
 
-    var getCompare = remember { mutableStateOf("Start work") }
+    // Скобелевская улица, 19
+    // Чечерский проезд, 51
+    val workerLocation = remember { mutableStateOf(Workspace.startLocation) }
+    val orderLocation = remember { mutableStateOf("") }
+    var timerText = remember { mutableStateOf("Waiting..") }
 
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
@@ -223,7 +229,7 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
         R.drawable.ic_steps,
         R.drawable.ic_map,
         R.drawable.ic_last_order,
-        null,
+        R.drawable.ic_start_work,
         R.drawable.ic_slots,
         R.drawable.ic_support_agent,
         R.drawable.ic_account
@@ -284,7 +290,7 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                 val list = indexToListMap[index] ?: emptyList<Any>()
                 Column (
                     Modifier
-                        .then(if(index != 8) Modifier.verticalScroll(rememberScrollState()) else Modifier)
+                        .then(if (index != 8) Modifier.verticalScroll(rememberScrollState()) else Modifier)
                         .fillMaxSize(),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -310,22 +316,65 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                     }
                     // YandexMap
                     if (index == 4) {
+                        Row {
+                            Text(
+                                timerText.value,
+                                color = MaterialTheme.colorScheme.surface
+                            )
+                        }
                         YandexMap.Mapa()
                     }
                     if (index == 6) {
-                        // Скобелевская улица, 19
-                        // Чечерский проезд, 51
-                        val workerLocation = "Москва, Южное Бутово, Чечерский проезд, 51"
-                        val orderLocation = "Москва, Южное Бутово, Чечерский проезд, 100"
+                        TextField(
+                            value = workerLocation.value,
+                            onValueChange = {
+                                    newText -> workerLocation.value = newText
+                            },
+                            Modifier
+                                .fillMaxWidth(),
+                            label = {
+                                Text (
+                                    "Worker location"
+                                )
+                            }
+                        )
+                        TextField(
+                            value = orderLocation.value,
+                            onValueChange = {
+                                    newText -> orderLocation.value = newText
+                            },
+                            Modifier
+                                .fillMaxWidth(),
+                            label = {
+                                Text (
+                                    "Order location"
+                                )
+                            },
+                            supportingText = {
+                                Text (
+                                    "Пример: Москва, Южное Бутово, Чечерский проезд, 51"
+                                )
+                            }
+                        )
                         Button(onClick = {
                             GlobalScope.launch(Dispatchers.Main) {
-                                getCompare.value =
-                                    Working.compareLocations(workerLocation, orderLocation, App.GEO_API_KEY)
-                                        .toString()
+                                if (Working.compareLocations(workerLocation.value, orderLocation.value, App.GEO_API_KEY)) {
+                                    expanded.value = !expanded.value
+                                    cells.intValue = 2
+                                    openCell.intValue = -1
+                                    delay(500)
+                                    openCell.intValue = 4
+                                    cells.intValue = 1
+                                    YandexMap.mapMode.value = "route"
+
+                                    Working.startTimer(Working.timerDuration) { remainingTime ->
+                                        timerText.value = "Осталось: ${remainingTime / 1_000} сек."
+                                    }
+                                }
                             }
                         }) {
                             Text(
-                                getCompare.value
+                                "Start work"
                             )
                         }
                     } else {
@@ -373,45 +422,38 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                     }
                 }
             } else {
-                // Start Working
-                if (index == 6) {
-                    Button(onClick = {}) {
-                        Text("Start work")
-                    }
-                } else {
-                    Row(
-                        Modifier,
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(icons.getOrNull(index) ?: R.drawable.ic_visibility_off),
-                            contentDescription = null,
-                            tint = defaultOnColor,
-                            modifier = Modifier.size(64.dp)
+                Row(
+                    Modifier,
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        painter = painterResource(icons.getOrNull(index) ?: R.drawable.ic_visibility_off),
+                        contentDescription = null,
+                        tint = defaultOnColor,
+                        modifier = Modifier.size(64.dp)
+                    )
+                    if (index in 0..3) {
+                        Text(
+                            text = when (index) {
+                                0 -> pay[pay.size - 1].toString()
+                                1 -> donate[donate.size - 1].toString()
+                                2 -> stars[stars.size - 1].toString()
+                                3 -> steps[steps.size - 1].toString()
+                                else -> "Error lol"
+                            },
+                            Modifier.padding(5.dp),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 24.sp,
+                            color = defaultOnColor
                         )
-                        if (index in 0..3) {
+                        if (index == 0 || index == 1) {
                             Text(
-                                text = when (index) {
-                                    0 -> pay[pay.size - 1].toString()
-                                    1 -> donate[donate.size - 1].toString()
-                                    2 -> stars[stars.size - 1].toString()
-                                    3 -> steps[steps.size - 1].toString()
-                                    else -> "Error lol"
-                                },
-                                Modifier.padding(5.dp),
-                                fontWeight = FontWeight.Bold,
+                                text = currency,
                                 fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
                                 color = defaultOnColor
                             )
-                            if (index == 0 || index == 1) {
-                                Text(
-                                    text = currency,
-                                    fontSize = 24.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = defaultOnColor
-                                )
-                            }
                         }
                     }
                 }

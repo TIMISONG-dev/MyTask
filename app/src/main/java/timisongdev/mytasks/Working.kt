@@ -1,5 +1,7 @@
 package timisongdev.mytasks
 
+import android.os.CountDownTimer
+import androidx.compose.runtime.remember
 import okhttp3.OkHttpClient
 import kotlinx.coroutines.*
 import okhttp3.Request
@@ -8,14 +10,16 @@ import kotlin.math.*
 
 class Working {
     // Mechanism for courier working
-    val timer = 0
-    val orderMode = "null"
-    val taskMode = "null"
-    val countOrders = 0
-    val bonus = 1
-    val status = 6
 
     companion object {
+        var timerDuration = 300_000L
+        val orderMode = "null"
+        val taskMode = "null"
+        val countOrders = 0
+        val bonus = 1
+        val status = 6
+
+        var order: Pair<Double, Double>? = null
 
         private suspend fun getCoordinatesFromAddress(address: String, apiKey: String): Pair<Double, Double>? {
             return withContext(Dispatchers.IO) {
@@ -49,13 +53,30 @@ class Working {
             }
         }
 
+        private fun parseCoordinates(input: String): Pair<Double, Double>? {
+            return try {
+                val parts = input.split(",").map { it.trim() }
+                if (parts.size == 2) {
+                    val lat = parts[0].toDouble()
+                    val lon = parts[1].toDouble()
+                    Pair(lat, lon)
+                } else {
+                    null
+                }
+            } catch (e: Exception) {
+                null
+            }
+        }
+
         suspend fun compareLocations(workerLocation: String, orderLocation: String, apiKey: String): Boolean {
-            val workerCoordinates = getCoordinatesFromAddress(workerLocation, apiKey)
-            val orderCoordinates = getCoordinatesFromAddress(orderLocation, apiKey)
+            val workerCoordinates = parseCoordinates(workerLocation) ?: getCoordinatesFromAddress(workerLocation, apiKey)
+            val orderCoordinates = parseCoordinates(orderLocation) ?: getCoordinatesFromAddress(orderLocation, apiKey)
 
             if (workerCoordinates == null || orderCoordinates == null) {
                 return false
             }
+
+            order = orderCoordinates
 
             val (workerLatitude, workerLongitude) = workerCoordinates
             val (orderLatitude, orderLongitude) = orderCoordinates
@@ -66,7 +87,7 @@ class Working {
             return distance <= 2
         }
 
-        fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
             val R = 6371.0 // Радиус Земли в километрах
             val lat1Rad = Math.toRadians(lat1)
             val lon1Rad = Math.toRadians(lon1)
@@ -80,6 +101,18 @@ class Working {
             val c = 2 * atan2(sqrt(a), sqrt(1 - a))
 
             return R * c
+        }
+
+        fun startTimer(durationInMillis: Long, onTick: (Long) -> Unit) {
+            object : CountDownTimer(durationInMillis, 1_000) {
+                override fun onTick(millisUntilFinished: Long) {
+                    onTick(millisUntilFinished)
+                }
+
+                override fun onFinish() {
+                    onTick(0L)
+                }
+            }.start()
         }
     }
 }
