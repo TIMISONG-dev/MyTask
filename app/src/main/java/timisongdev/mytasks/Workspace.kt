@@ -6,9 +6,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
-import android.util.Log
-import android.view.View
-import android.webkit.WebView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.*
 import androidx.activity.enableEdgeToEdge
@@ -44,10 +41,7 @@ class Workspace : ComponentActivity() {
 
     companion object {
         var isInit = mutableStateOf(false)
-
         val nextStep = mutableStateOf(false)
-
-        val dragAnim = mutableStateOf(false)
         var startLocation = ""
 
         fun getMap(context: Context): MapView {
