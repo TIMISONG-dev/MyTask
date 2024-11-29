@@ -12,6 +12,7 @@ import androidx.room.RoomDatabase
 import kotlinx.coroutines.flow.Flow
 
 class MyBaseData {
+
     @Entity(tableName = "messages")
     data class MessageEntity(
         @PrimaryKey val id: String,

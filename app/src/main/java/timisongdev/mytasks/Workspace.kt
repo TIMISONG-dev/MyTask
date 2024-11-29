@@ -6,6 +6,9 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
+import android.util.Log
+import android.view.View
+import android.webkit.WebView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.*
 import androidx.activity.enableEdgeToEdge
@@ -41,6 +44,10 @@ class Workspace : ComponentActivity() {
 
     companion object {
         var isInit = mutableStateOf(false)
+
+        val nextStep = mutableStateOf(false)
+
+        val dragAnim = mutableStateOf(false)
         var startLocation = ""
 
         fun getMap(context: Context): MapView {
@@ -167,7 +174,6 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
     // Чечерский проезд, 51
     val workerLocation = remember { mutableStateOf(Workspace.startLocation) }
     val orderLocation = remember { mutableStateOf("") }
-    var timerText = remember { mutableStateOf("Waiting..") }
 
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
@@ -246,12 +252,14 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
 
     val exHeight by animateDpAsState(
         targetValue = if (expanded.value) screenHeight else 200.dp,
-        animationSpec = tween(300), label = ""
+        animationSpec = tween(300),
+        label = "expanded height"
     )
 
     val exWidth by animateDpAsState(
         targetValue = if (expanded.value) screenWidth else 200.dp,
-        animationSpec = tween(300), label = ""
+        animationSpec = tween(300),
+        label = "expanded width"
     )
 
     // Показываем либо один выбранный tile Grid или все tiles
@@ -287,6 +295,7 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                     .padding(8.dp)
             )
             if (expanded.value) {
+                Workspace.nextStep.value = false
                 val list = indexToListMap[index] ?: emptyList<Any>()
                 Column (
                     Modifier
@@ -316,12 +325,6 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                     }
                     // YandexMap
                     if (index == 4) {
-                        Row {
-                            Text(
-                                timerText.value,
-                                color = MaterialTheme.colorScheme.surface
-                            )
-                        }
                         YandexMap.Mapa()
                     }
                     if (index == 6) {
@@ -360,16 +363,10 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                             GlobalScope.launch(Dispatchers.Main) {
                                 if (Working.compareLocations(workerLocation.value, orderLocation.value, App.GEO_API_KEY)) {
                                     expanded.value = !expanded.value
-                                    cells.intValue = 2
-                                    openCell.intValue = -1
-                                    delay(500)
                                     openCell.intValue = 4
                                     cells.intValue = 1
                                     YandexMap.mapMode.value = "route"
-
-                                    Working.startTimer(Working.timerDuration) { remainingTime ->
-                                        timerText.value = "Осталось: ${remainingTime / 1_000} сек."
-                                    }
+                                    Workspace.nextStep.value = true
                                 }
                             }
                         }) {
@@ -456,6 +453,14 @@ fun GridItem(title: String, index: Int, cells: MutableIntState, openCell: Mutabl
                             )
                         }
                     }
+                }
+                if (Workspace.nextStep.value) {
+                    Text (
+                        "Tap to open tab!",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = defaultOnColor
+                    )
                 }
             }
         }

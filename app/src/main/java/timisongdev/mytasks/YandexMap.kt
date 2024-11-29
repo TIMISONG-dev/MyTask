@@ -6,7 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.webkit.*
-import androidx.compose.foundation.layout.Row
+import android.widget.Toast
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.google.android.gms.maps.model.Circle
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.location.*
@@ -36,16 +37,14 @@ class YandexMap {
             val configuration = LocalConfiguration.current
             val screenHeight = configuration.screenHeightDp.dp
 
-            Button(onClick = {
-                if (mapMode.value == "route"){
+            if (mapMode.value == "route") {
+                Button(onClick = {
                     mapMode.value = "map"
-                } else {
-                    mapMode.value = "route"
+                }) {
+                    Text(
+                        "Return to map"
+                    )
                 }
-            }) {
-                Text(
-                    "Route / Map"
-                )
             }
 
             if (mapMode.value == "map") {
@@ -89,29 +88,23 @@ class YandexMap {
                                             val uri = Uri.parse(it)
                                             if (it.startsWith("intent://")) {
                                                 try {
-                                                    // Попытка распарсить intent из URI
                                                     val intent = Intent.parseUri(it, Intent.URI_INTENT_SCHEME)
                                                     val appPackageName = intent.data?.schemeSpecificPart
 
-                                                    // Проверка наличия активности для этого intent
                                                     val packageManager = view?.context?.packageManager
                                                     val resolveInfo = packageManager?.resolveActivity(intent, PackageManager.MATCH_ALL)
 
                                                     if (resolveInfo != null) {
-                                                        // Приложение установлено — запускаем его
                                                         context.startActivity(intent)
                                                     } else {
-                                                        // Если приложение не установлено — открываем Google Play или fallback URL
                                                         val fallbackUrl = intent.getStringExtra("browser_fallback_url")
                                                         if (fallbackUrl != null) {
-                                                            // Безопасно вызываем loadUrl через view?.loadUrl
                                                             view?.loadUrl(fallbackUrl)
                                                         } else {
                                                             try {
                                                                 val playStoreIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$appPackageName"))
                                                                 view?.context?.startActivity(playStoreIntent)
                                                             } catch (e: Exception) {
-                                                                // На случай если Google Play недоступен, можно показать ошибку
                                                                 e.printStackTrace()
                                                             }
                                                         }
@@ -130,7 +123,7 @@ class YandexMap {
                                                 }
                                             }
                                         }
-                                        return false // Оставляем стандартное поведение для остальных URL
+                                        return false
                                     }
                                 }
                                 if (Working.order == null) {
@@ -165,12 +158,25 @@ class YandexMap {
 
         private fun MapView.showUserLocation() {
             if (Workspace.isInit.value) {
+
                 val locationManager: LocationManager = MapKitFactory.getInstance().createLocationManager()
 
                 locationManager.requestSingleUpdate(object : LocationListener {
                     override fun onLocationUpdated(location: com.yandex.mapkit.location.Location) {
 
                         val userLocation = Point(location.position.latitude, location.position.longitude)
+
+                        val circle = com.yandex.mapkit.geometry.Circle(
+                            Point(location.position.latitude, location.position.longitude),
+                            20f
+                        )
+
+                        map.mapObjects.addCircle(circle).apply {
+                            strokeWidth = 2f
+                            strokeColor = R.color.teal_200
+                            fillColor = R.color.teal_700
+                        }
+
                         map.move(
                             CameraPosition(
                                 userLocation,
@@ -181,7 +187,8 @@ class YandexMap {
                         )
                     }
 
-                    override fun onLocationStatusUpdated(status: LocationStatus) {
+                    override fun onLocationStatusUpdated(p0: LocationStatus) {
+                        Toast.makeText(context, "$p0", Toast.LENGTH_SHORT).show()
                     }
                 })
             }

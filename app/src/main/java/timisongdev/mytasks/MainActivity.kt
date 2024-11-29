@@ -83,6 +83,7 @@ fun Greeting() {
     var card by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var adphone by remember { mutableStateOf("") }
+    var key by remember { mutableStateOf("") }
     var pageLevel by remember { mutableIntStateOf(1) }
 
     val material = MaterialTheme.colorScheme
@@ -125,6 +126,7 @@ fun Greeting() {
 
     var passwordVisibility: Boolean by remember { mutableStateOf(false) }
     var checkPassVisibility: Boolean by remember { mutableStateOf(false) }
+    var checkKeyVisibility: Boolean by remember { mutableStateOf(false) }
     var pageVis by remember { mutableStateOf(true) }
 
     val configuration = LocalConfiguration.current
@@ -433,6 +435,45 @@ fun Greeting() {
                                     } else null
                                 )
                             }
+                            TextField(
+                                modifier = Modifier
+                                    .width(300.dp),
+                                value = key,
+                                onValueChange =
+                                {
+                                        newText -> key = newText
+                                },
+                                label =
+                                {
+                                    Text(
+                                        text = "Key (for admins)"
+                                    )
+                                },
+                                singleLine = true,
+                                visualTransformation = if (checkKeyVisibility || pageLevel > 1) VisualTransformation.None else PasswordVisualTransformation(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Outlined.Build,
+                                        contentDescription = "Admin key"
+                                    )
+                                },
+                                trailingIcon = {
+                                    val image = if (checkKeyVisibility) {
+                                        R.drawable.ic_visibility
+                                    } else {
+                                        R.drawable.ic_visibility_off
+                                    }
+                                    IconButton(onClick = {
+                                        checkKeyVisibility = !checkKeyVisibility
+                                    }) {
+                                        Icon(
+                                            painter = painterResource(id = image),
+                                            contentDescription = ""
+                                        )
+                                    }
+                                }
+                            )
                         } else {
                             Row (
                                 Modifier

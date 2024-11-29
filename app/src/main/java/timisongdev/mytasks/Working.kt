@@ -1,7 +1,5 @@
 package timisongdev.mytasks
 
-import android.os.CountDownTimer
-import androidx.compose.runtime.remember
 import okhttp3.OkHttpClient
 import kotlinx.coroutines.*
 import okhttp3.Request
@@ -101,18 +99,6 @@ class Working {
             val c = 2 * atan2(sqrt(a), sqrt(1 - a))
 
             return R * c
-        }
-
-        fun startTimer(durationInMillis: Long, onTick: (Long) -> Unit) {
-            object : CountDownTimer(durationInMillis, 1_000) {
-                override fun onTick(millisUntilFinished: Long) {
-                    onTick(millisUntilFinished)
-                }
-
-                override fun onFinish() {
-                    onTick(0L)
-                }
-            }.start()
         }
     }
 }
